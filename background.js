@@ -16,3 +16,19 @@ function redirectTabToViewer(tabId, originalPdfUrl) {
 
   chrome.tabs.update(tabId, { url: viewerUrl });
 }
+
+chrome.webNavigation.onBeforeNavigate.addListener((details) => {
+  if (details.frameId !== 0) return;
+
+  if (isPdfUrl(details.url)) {
+    redirectTabToViewer(details.tabId, details.url);
+  }
+});
+
+chrome.action.onClicked.addListener((tab) => {
+  if (isPdfUrl(tab.url)) {
+    redirectTabToViewer(tab.id, tab.url);
+  } else {
+    console.log("მიმდინარე გვერდი PDF არ არის:", tab.url);
+  }
+});
