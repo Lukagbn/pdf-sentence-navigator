@@ -20,3 +20,34 @@ async function fetchPdfBytes(fileUrl) {
 
   return response.arrayBuffer();
 }
+
+function buildTextLayerForPage(textContent, viewport, containerEl) {
+  const spans = [];
+
+  textContent.items.forEach((item) => {
+    if (!item.str) {
+      spans.push(null);
+      return;
+    }
+
+    const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+
+    const angle = Math.atan2(tx[1], tx[0]);
+    const fontHeight = Math.hypot(tx[2], tx[3]);
+
+    const span = document.createElement("span");
+    span.textContent = item.str;
+    span.style.left = `${tx[4]}px`;
+    span.style.top = `${tx[5] - fontHeight}px`;
+    span.style.fontSize = `${fontHeight}px`;
+    span.style.fontFamily = "sans-serif";
+    if (angle !== 0) {
+      span.style.transform = `rotate(${angle}rad)`;
+    }
+
+    containerEl.appendChild(span);
+    spans.push(span);
+  });
+
+  return spans;
+}
