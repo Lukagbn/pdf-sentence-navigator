@@ -97,3 +97,41 @@ function groupItemsIntoSentences(items, spans) {
 
   return sentenceGroups;
 }
+
+function highlightSentenceAt(index) {
+  if (currentIndex >= 0 && allSentences[currentIndex]) {
+    allSentences[currentIndex].forEach((span) =>
+      span.classList.remove("sentence-highlight"),
+    );
+  }
+
+  index = Math.max(0, Math.min(index, allSentences.length - 1));
+  currentIndex = index;
+
+  const spans = allSentences[currentIndex];
+  spans.forEach((span) => span.classList.add("sentence-highlight"));
+
+  spans[0].scrollIntoView({ block: "center", behavior: "smooth" });
+}
+
+function moveToNextSentence() {
+  if (allSentences.length === 0) return;
+  highlightSentenceAt(currentIndex + 1);
+}
+
+function moveToPreviousSentence() {
+  if (allSentences.length === 0) return;
+  highlightSentenceAt(currentIndex - 1);
+}
+
+function handleKeydown(e) {
+  if (e.key !== "Tab") return;
+
+  e.preventDefault();
+
+  if (e.shiftKey) {
+    moveToPreviousSentence();
+  } else {
+    moveToNextSentence();
+  }
+}
