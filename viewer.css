@@ -1,0 +1,48 @@
+body {
+  margin: 0;
+  background: #525659;
+  font-family: sans-serif;
+}
+
+#status {
+  color: white;
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+}
+
+#pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+}
+
+.page {
+  position: relative;
+  background: white;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+.page canvas {
+  display: block;
+}
+
+.textLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.textLayer span {
+  position: absolute;
+  white-space: pre;
+  color: transparent;
+  transform-origin: 0% 0%;
+}
+
+.sentence-highlight {
+  background-color: rgba(255, 213, 0, 0.55);
+  border-radius: 2px;
+}
