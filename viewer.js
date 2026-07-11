@@ -51,3 +51,49 @@ function buildTextLayerForPage(textContent, viewport, containerEl) {
 
   return spans;
 }
+
+function groupItemsIntoSentences(items, spans) {
+  let fullText = "";
+
+  const charToItemIndex = [];
+
+  items.forEach((item, idx) => {
+    const str = item.str || "";
+
+    for (let k = 0; k < str.length; k++) {
+      charToItemIndex.push(idx);
+    }
+    fullText += str;
+
+    if (str && !/\s$/.test(str)) {
+      fullText += " ";
+      charToItemIndex.push(idx);
+    }
+  });
+
+  const sentenceRegex = /[^.!?]+[.!?]+(\s+|$)|[^.!?]+$/g;
+
+  const sentenceGroups = [];
+  let match;
+  while ((match = sentenceRegex.exec(fullText)) !== null) {
+    if (!match[0].trim()) continue;
+
+    const start = match.index;
+    const end = start + match[0].length;
+
+    const itemIndexSet = new Set();
+    for (let c = start; c < end && c < charToItemIndex.length; c++) {
+      itemIndexSet.add(charToItemIndex[c]);
+    }
+
+    const spansForThisSentence = [...itemIndexSet]
+      .map((i) => spans[i])
+      .filter(Boolean);
+
+    if (spansForThisSentence.length > 0) {
+      sentenceGroups.push(spansForThisSentence);
+    }
+  }
+
+  return sentenceGroups;
+}
