@@ -135,3 +135,74 @@ function handleKeydown(e) {
     moveToNextSentence();
   }
 }
+
+async function main() {
+  const statusEl = document.getElementById("status");
+  const pagesContainer = document.getElementById("pages");
+
+  const fileUrl = getFileUrlFromQuery();
+  if (!fileUrl) {
+    statusEl.textContent =
+      "PDF ფაილის მისამართი ვერ მოიძებნა (აკლია ?file= პარამეტრი URL-ში).";
+    return;
+  }
+
+  let pdfBytes;
+  try {
+    pdfBytes = await fetchPdfBytes(fileUrl);
+  } catch (err) {
+    statusEl.textContent = "შეცდომა PDF-ის ჩატვირთვისას: " + err.message;
+    console.error(err);
+    return;
+  }
+
+  const pdf = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    statusEl.textContent = `მუშავდება გვერდი ${pageNum} / ${pdf.numPages}...`;
+
+    const page = await pdf.getPage(pageNum);
+
+    const viewport = page.getViewport({ scale: 1.5 });
+
+    const pageDiv = document.createElement("div");
+    pageDiv.className = "page";
+    pageDiv.style.width = `${viewport.width}px`;
+    pageDiv.style.height = `${viewport.height}px`;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    const textLayerDiv = document.createElement("div");
+    textLayerDiv.className = "textLayer";
+    textLayerDiv.style.width = `${viewport.width}px`;
+    textLayerDiv.style.height = `${viewport.height}px`;
+
+    pageDiv.appendChild(canvas);
+    pageDiv.appendChild(textLayerDiv);
+    pagesContainer.appendChild(pageDiv);
+
+    await page.render({ canvasContext: canvas.getContext("2d"), viewport })
+      .promise;
+
+    const textContent = await page.getTextContent();
+
+    const spans = buildTextLayerForPage(textContent, viewport, textLayerDiv);
+
+    const pageSentences = groupItemsIntoSentences(textContent.items, spans);
+    allSentences.push(...pageSentences);
+  }
+
+  statusEl.textContent =
+    `მზადაა — ${pdf.numPages} გვერდი, ${allSentences.length} წინადადება. ` +
+    `გამოიყენე Tab (შემდეგი) და Shift+Tab (წინა).`;
+
+  if (allSentences.length > 0) {
+    highlightSentenceAt(0);
+  }
+}
+
+document.addEventListener("keydown", handleKeydown);
+
+main();
