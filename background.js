@@ -7,3 +7,12 @@ function isPdfUrl(url) {
 
   return PDF_URL_PATTERN.test(url);
 }
+
+function redirectTabToViewer(tabId, originalPdfUrl) {
+  const viewerUrl =
+    chrome.runtime.getURL("viewer.html") +
+    "?file=" +
+    encodeURIComponent(originalPdfUrl);
+
+  chrome.tabs.update(tabId, { url: viewerUrl });
+}
