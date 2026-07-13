@@ -15,41 +15,71 @@ function getFileUrlFromQuery() {
 async function fetchPdfBytes(fileUrl) {
   const response = await fetch(fileUrl);
   if (!response.ok) {
-    throw new Error("PDF ვერ ჩაიტვირთა");
+    throw new Error("Error loading PDF");
   }
 
   return response.arrayBuffer();
 }
 
+function splitAtInternalSentenceEnd(str) {
+  const pieces = [];
+  let pieceStart = 0;
+  const boundaryRegex = /[.!?]+\s+/g;
+  let m;
+  while ((m = boundaryRegex.exec(str)) !== null) {
+    const boundaryEnd = m.index + m[0].length;
+    if (boundaryEnd >= str.length) break;
+    pieces.push({
+      str: str.slice(pieceStart, boundaryEnd),
+      offset: pieceStart,
+    });
+    pieceStart = boundaryEnd;
+  }
+  pieces.push({ str: str.slice(pieceStart), offset: pieceStart });
+  return pieces;
+}
+
 function buildTextLayerForPage(textContent, viewport, containerEl) {
   const spans = [];
+  const subItems = [];
 
   textContent.items.forEach((item) => {
     if (!item.str) {
       spans.push(null);
+      subItems.push({ str: "" });
       return;
     }
-
     const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
 
     const angle = Math.atan2(tx[1], tx[0]);
     const fontHeight = Math.hypot(tx[2], tx[3]);
+    const pixelScale = Math.hypot(viewport.transform[0], viewport.transform[1]);
+    const totalPixelWidth = item.width * pixelScale;
+    const totalChars = item.str.length;
+    const pieces = splitAtInternalSentenceEnd(item.str);
 
-    const span = document.createElement("span");
-    span.textContent = item.str;
-    span.style.left = `${tx[4]}px`;
-    span.style.top = `${tx[5] - fontHeight}px`;
-    span.style.fontSize = `${fontHeight}px`;
-    span.style.fontFamily = "sans-serif";
-    if (angle !== 0) {
-      span.style.transform = `rotate(${angle}rad)`;
-    }
+    pieces.forEach((piece) => {
+      const offsetPx = (piece.offset / totalChars) * totalPixelWidth;
+      const pieceLeft = tx[4] + offsetPx * Math.cos(angle);
+      const pieceTop = tx[5] + offsetPx * Math.sin(angle);
 
-    containerEl.appendChild(span);
-    spans.push(span);
+      const span = document.createElement("span");
+      span.textContent = piece.str;
+      span.style.left = `${pieceLeft}px`;
+      span.style.top = `${pieceTop - fontHeight}px`;
+      span.style.fontSize = `${fontHeight}px`;
+      span.style.fontFamily = "sans-serif";
+      if (angle !== 0) {
+        span.style.transform = `rotate(${angle}rad)`;
+      }
+
+      containerEl.appendChild(span);
+      spans.push(span);
+      subItems.push({ str: piece.str });
+    });
   });
 
-  return spans;
+  return { spans, subItems };
 }
 
 function groupItemsIntoSentences(items, spans) {
@@ -143,7 +173,7 @@ async function main() {
   const fileUrl = getFileUrlFromQuery();
   if (!fileUrl) {
     statusEl.textContent =
-      "PDF ფაილის მისამართი ვერ მოიძებნა (აკლია ?file= პარამეტრი URL-ში).";
+      "Can't find PDF file(missing ?file= property in URL).";
     return;
   }
 
@@ -151,7 +181,7 @@ async function main() {
   try {
     pdfBytes = await fetchPdfBytes(fileUrl);
   } catch (err) {
-    statusEl.textContent = "შეცდომა PDF-ის ჩატვირთვისას: " + err.message;
+    statusEl.textContent = "Error loading PDF: " + err.message;
     console.error(err);
     return;
   }
@@ -159,8 +189,6 @@ async function main() {
   const pdf = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
 
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    statusEl.textContent = `მუშავდება გვერდი ${pageNum} / ${pdf.numPages}...`;
-
     const page = await pdf.getPage(pageNum);
 
     const viewport = page.getViewport({ scale: 1.5 });
@@ -188,15 +216,17 @@ async function main() {
 
     const textContent = await page.getTextContent();
 
-    const spans = buildTextLayerForPage(textContent, viewport, textLayerDiv);
+    const { spans, subItems } = buildTextLayerForPage(
+      textContent,
+      viewport,
+      textLayerDiv,
+    );
 
-    const pageSentences = groupItemsIntoSentences(textContent.items, spans);
+    const pageSentences = groupItemsIntoSentences(subItems, spans);
     allSentences.push(...pageSentences);
   }
 
-  statusEl.textContent =
-    `მზადაა — ${pdf.numPages} გვერდი, ${allSentences.length} წინადადება. ` +
-    `გამოიყენე Tab (შემდეგი) და Shift+Tab (წინა).`;
+  statusEl.textContent = "";
 
   if (allSentences.length > 0) {
     highlightSentenceAt(0);

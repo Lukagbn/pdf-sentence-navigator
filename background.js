@@ -29,6 +29,6 @@ chrome.action.onClicked.addListener((tab) => {
   if (isPdfUrl(tab.url)) {
     redirectTabToViewer(tab.id, tab.url);
   } else {
-    console.log("მიმდინარე გვერდი PDF არ არის:", tab.url);
+    console.log("Current page isn't PDF:", tab.url);
   }
 });

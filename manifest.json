@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PDF Sentence Navigator",
   "version": "1.0",
-  "description": "PDF დოკუმენტში წინადადებებს შორის გადაადგილება Tab / Shift+Tab კლავიშებით, აქტიური წინადადების ხაზგასმით.",
+  "description": "Keyboard navigation between sentences in a PDF document.",
 
   "permissions": ["webNavigation", "tabs"],
   "host_permissions": ["<all_urls>"],
@@ -12,6 +12,6 @@
   },
 
   "action": {
-    "default_title": "PDF Sentence Navigator-ში გახსნა"
+    "default_title": "Open in PDF Sentence Navigator"
   }
 }
