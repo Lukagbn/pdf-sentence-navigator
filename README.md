@@ -1,10 +1,10 @@
-# PDF Sentence Navigator
+# PDF Sentence Navigator(google extension)
  
 Keyboard navigation between sentences in a PDF document opened in Chrome.
  
 - **Tab** - Next sentence
 - **Shift + Tab** - Previous sentence
-The active sentence is visually highlighted. Everything works locally in the browser — nothing is sent to an external server.
+The active sentence is visually highlighted. Everything works locally in the browser - nothing is sent to an external server.
  
 ## Installation
  
